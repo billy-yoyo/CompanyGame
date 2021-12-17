@@ -34,7 +34,6 @@ Create data model
     1. id
     1. type (extraction, population, depot, factory)
     1. name
-    1. owner id
     1. vertex id
     1. size (determins how close nodes can be together)
     1. buildings (a list of building ids which are at this node)

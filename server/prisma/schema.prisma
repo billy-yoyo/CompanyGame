@@ -1,0 +1,302 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Graph {
+  id  Int   @id @default(autoincrement())
+  gameId Int
+
+  game Game @relation(fields: [gameId], references: [id])
+
+  vertices GraphVertex[]
+  nodes GraphNode[]
+  zones GraphZone[]
+}
+
+enum NodeType {
+  EXTRACTION
+  POPULATION
+  DEPOT
+  FACTORY
+}
+
+model GraphNode {
+  id Int @id @default(autoincrement())
+  graphId Int
+  vertexId Int
+  countryId Int
+
+  name String
+  type NodeType
+  size Int
+
+  graph Graph @relation(fields: [graphId], references: [id])
+  vertex GraphVertex @relation(fields: [vertexId], references: [id])
+
+  leftConnections GraphConnection[] @relation("left-node-relation")
+  rightConnections GraphConnection[] @relation("right-node-relation")
+  buildings Building[]
+  country CountryNode?
+}
+
+model GraphConnection {
+  leftId Int
+  rightId Int
+
+  left GraphNode @relation("left-node-relation", fields: [leftId], references: [id])
+  right GraphNode @relation("right-node-relation", fields: [rightId], references: [id])
+
+  @@id([leftId, rightId])
+}
+
+model GraphZone {
+  id Int @id @default(autoincrement())
+  graphId Int
+
+  graph Graph @relation(fields: [graphId], references: [id])
+  vertices GraphZoneVertex[]
+}
+
+model GraphZoneVertex {
+  zoneId Int
+  vertexId Int
+
+  zone GraphZone @relation(fields: [zoneId], references: [id])
+  vertex GraphVertex @relation(fields: [vertexId], references: [id])
+
+  @@id([zoneId, vertexId])
+}
+
+model GraphVertex {
+  id Int @id @default(autoincrement())
+  graphId Int
+  x Int
+  y Int
+
+  graph Graph @relation(fields: [graphId], references: [id])
+
+  nodes GraphNode[]
+  zoneVertices GraphZoneVertex[]
+}
+
+enum BuildingType {
+  MINE
+  LUMBERYARD
+  WAREHOUSE
+}
+
+model Building {
+  id Int @id @default(autoincrement())
+  nodeId Int
+
+  type BuildingType
+
+  node GraphNode @relation(fields: [nodeId], references: [id])
+  inventory InventoryItem[]
+  
+  companyOwners CompanyBuildingOwner[]
+  corporationOwners CorporationBuildingOwner[]
+  countryOwners CountryBuildingOwner[]
+}
+
+model CompanyBuildingOwner {
+  buildingId Int
+  ownerId Int
+
+  company Company @relation(fields: [ownerId], references: [id])
+  building Building @relation(fields: [buildingId], references: [id])
+  @@id([buildingId, ownerId])
+}
+
+model CorporationBuildingOwner {
+  buildingId Int
+  ownerId Int
+
+  corporation Corporation @relation(fields: [ownerId], references: [id])
+  building Building @relation(fields: [buildingId], references: [id])
+  @@id([buildingId, ownerId])
+}
+
+model CountryBuildingOwner {
+  buildingId Int
+  ownerId Int
+
+  country Country? @relation(fields: [ownerId], references: [id])
+  building Building @relation(fields: [buildingId], references: [id])
+  @@id([buildingId, ownerId])
+}
+
+model InventoryItem {
+  buildingId Int
+  itemId Int
+  count Int
+
+  building Building @relation(fields: [buildingId], references: [id])
+  item Item @relation(fields: [itemId], references: [id])
+
+  @@id([buildingId, itemId])
+}
+
+model Item {
+  id Int @id @default(autoincrement())
+  name String
+
+  inventoryItems InventoryItem[]
+}
+
+model Company {
+  id Int @id @default(autoincrement())
+  gameId Int
+
+  name String
+  money Float
+
+  game Game @relation(fields: [gameId], references: [id])
+
+  buildings CompanyBuildingOwner[]
+  corporationOwners CorporationCompanyOwner[]
+  personOwners PersonCompanyOwner[]
+}
+
+model CorporationCompanyOwner {
+  companyId Int
+  ownerId Int
+
+  corporation Corporation @relation(fields: [ownerId], references: [id])
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@id([companyId, ownerId])
+}
+
+model PersonCompanyOwner {
+  companyId Int
+  ownerId Int
+
+  person Person @relation(fields: [ownerId], references: [id])
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@id([companyId, ownerId])
+}
+
+model Corporation {
+  id Int @id @default(autoincrement())
+  gameId Int
+
+  name String
+  money Float
+
+  game Game @relation(fields: [gameId], references: [id])
+
+  buildings CorporationBuildingOwner[]
+  companies CorporationCompanyOwner[]
+  stakeholds CorporationCorporationStakeholder[] @relation("stakeholder-owner-relation")
+
+  personStakeholders PersonCorporationStakeholder[]
+  corporationStakeholders CorporationCorporationStakeholder[] @relation("stakeholder-target-relation")
+}
+
+model PersonCorporationStakeholder {
+  corporationId Int
+  ownerId Int
+
+  stakes Float
+
+  person Person @relation(fields: [ownerId], references: [id])
+  corporation Corporation @relation(fields: [corporationId], references: [id])
+
+  @@id([corporationId, ownerId])
+}
+
+model CorporationCorporationStakeholder {
+  corporationId Int
+  ownerId Int
+
+  owner Corporation @relation("stakeholder-owner-relation", fields: [ownerId], references: [id])
+  corporation Corporation @relation("stakeholder-target-relation", fields: [corporationId], references: [id])
+
+  @@id([corporationId, ownerId])
+}
+
+model Country {
+  id Int @id @default(autoincrement())
+  gameId Int
+
+  name String
+  money Float
+  points Float
+
+  game Game @relation(fields: [gameId], references: [id])
+  buildings CountryBuildingOwner[]
+  nodes CountryNode[]
+  leaders CountryLeader[]
+}
+
+model CountryLeader {
+  countryId Int
+  personId Int
+
+  country Country @relation(fields: [countryId], references: [id])
+  person Person @relation(fields: [personId], references: [id])
+
+  @@id([countryId, personId])
+}
+
+model CountryNode {
+  countryId Int
+  nodeId Int
+
+  country Country @relation(fields: [countryId], references: [id])
+  node GraphNode @relation(fields: [nodeId], references: [id])
+
+  @@id([countryId, nodeId])
+}
+
+model Person {
+  id Int @id @default(autoincrement())
+  gameId Int
+  userId Int?
+
+  name String
+
+  game Game @relation(fields: [gameId], references: [id])
+
+  companies PersonCompanyOwner[]
+  corporations PersonCorporationStakeholder[]
+  countries CountryLeader[]
+}
+
+model Game {
+  id Int @id @default(autoincrement())
+  
+  graphs Graph[]
+  companies Company[]
+  corporations Corporation[]
+  countries Country[]
+  people Person[]
+}
+
+model User {
+  id Int @id @default(autoincrement())
+  email String
+  nickname String
+
+  auth UserAuth?
+}
+
+model UserAuth {
+  userId Int
+  username String @unique
+  passHash String
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([userId])
+}
