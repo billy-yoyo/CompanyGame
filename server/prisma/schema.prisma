@@ -286,7 +286,7 @@ model Game {
 model User {
   id Int @id @default(autoincrement())
   email String
-  nickname String
+  nickname String @unique
 
   auth UserAuth?
 }

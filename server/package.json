@@ -5,16 +5,26 @@
   "main": "index.js",
   "dependencies": {
     "@prisma/client": "^3.6.0",
+    "@types/axios": "^0.14.0",
     "@types/bcrypt": "^5.0.0",
     "@types/express": "^4.17.13",
     "@types/jsonwebtoken": "^8.5.6",
+    "axios": "^0.24.0",
     "bcrypt": "^5.0.1",
+    "body-parser": "^1.19.1",
+    "concurrently": "^6.5.0",
+    "dotenv": "^10.0.0",
     "express": "^4.17.1",
     "jest-mock-extended": "^2.0.4",
     "jsonwebtoken": "^8.5.1",
+    "nodemon": "^2.0.15",
     "prisma": "^3.6.0",
+    "ts-loader": "^9.2.6",
     "tsplate": "^1.4.1",
-    "typescript": "^4.5.4"
+    "typescript": "^4.5.4",
+    "webpack": "^5.65.0",
+    "webpack-cli": "^4.9.1",
+    "webpack-node-externals": "^3.0.0"
   },
   "devDependencies": {
     "@types/jest": "^27.0.3",
@@ -22,9 +32,22 @@
     "ts-jest": "^27.1.2"
   },
   "scripts": {
-    "test": "jest",
-    "build": "tsc",
-    "dev": "npm run build && node ./dist/app.js"
+    "build": "webpack",
+    "watch": "webpack --watch",
+    "start": "node -r dotenv/config ./dist/backend.js",
+    "serve": "nodemon -r dotenv/config ./dist/backend.js",
+    "start:test": "node -r dotenv/config ./dist/backend.js dotenv_config_path=.env.test",
+    "serve:test": "nodemon -r dotenv/config ./dist/backend.js dotenv_config_path=.env.test",
+    "server:dev": "concurrently \"npm run watch\" \"npm run serve\"",
+    "server:test": "concurrently \"npm run watch\" \"npm run serve:test\"",
+    "test:setup": "docker-compose up -f ./test/infrastructure/docker-compose.yaml",
+    "test:migrate": "dotenv -e .env.test -- npx prisma migrate dev --name test-1",
+    "test:teardown": "docker-compose down -f ./test/infrastructure/docker-compose.yaml",
+    "test:run": "dotenv -e .env.test jest -i",
+    "test:service": "npm run test:run -- -- test/service",
+    "test:controller": "npm run test:run -- -- test/controller",
+    "test": "dotenv -e .env.test jest -i",
+    "fullTest": "npm run test:setup && npm run test:migrate && npm run test:run && npm run test:teardown"
   },
   "author": "",
   "license": "ISC"

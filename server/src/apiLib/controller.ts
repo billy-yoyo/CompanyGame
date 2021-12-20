@@ -1,4 +1,4 @@
-import { Router, Response, Request } from "express";
+import { Router, Response, Request, NextFunction } from "express";
 import { Template } from "tsplate";
 
 interface Controller<B, Q, P, R> {
@@ -41,7 +41,7 @@ export class ControllerRouter {
         method: keyof Router
     ): (path: string, controller: Controller<B, Q, P, R>, handler: Handler<B, Q, P, R>) => void {
         return (path, controller, handler) => {
-            const route = (req: Request, res: Response) => {
+            const route = (req: Request, res: Response, next: NextFunction) => {
                 const request: ControllerRequest<B, Q, P> = {
                     req,
                     res,
@@ -53,29 +53,35 @@ export class ControllerRouter {
                     if (controller.body.valid(req.body)) {
                         request.body = controller.body.toModel(req.body);
                     } else {
-                        return throwBadRequest(res, 'Request body does not match expected format');
+                        throwBadRequest(res, 'Request body does not match expected format');
+                        return;
                     }
                 }
                 if (controller.query) {
                     if (controller.query.valid(req.query)) {
                         request.query = controller.query.toModel(req.query);
                     } else {
-                        return throwBadRequest(res, 'Request query does not match expected format');
+                        throwBadRequest(res, 'Request query does not match expected format');
+                        return;
                     }
                 }
                 if (controller.params) {
                     if (controller.params.valid(req.params)) {
                         request.params = controller.params.toModel(req.params);
                     } else {
-                        return throwBadRequest(res, 'Request path parameters do not match expected format');
+                        throwBadRequest(res, 'Request path parameters do not match expected format');
+                        return;
                     }
                 }
                 handler(request).then(result => {
                     if (controller.response) {
                         result = controller.response.toTransit(result);
                         res.status(200).json(result);
+                    } else {
+                        res.status(200).send(result);
                     }
-                    res.status(200).send(result);
+                }).catch((e) => {
+                    next(e);
                 });
             };
     

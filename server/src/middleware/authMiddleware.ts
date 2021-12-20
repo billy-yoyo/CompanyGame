@@ -1,10 +1,10 @@
 import { RequestHandler } from "express";
-import * as auth from "../service/auth";
+import * as auth from "../service/authService";
 
 const authMiddleware: RequestHandler = (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-        return res.status(403).send("No credentials supplied");
+        return res.status(401).send("No credentials supplied");
     }
 
     const parts = authHeader.split(" ");
@@ -13,15 +13,13 @@ const authMiddleware: RequestHandler = (req, res, next) => {
 
     if (type === "Bearer") {
         auth.authenticateAndGetUser(token).then(result => {
-            if (result.success) {
-                res.locals.user = result.user;
-                next();
-            } else {
-                res.status(403).send("Invalid token");
-            }
+            res.locals.user = result.user;
+            next();
+        }).catch(() => {
+            res.status(401).send("Invalid token");
         });
     } else {
-        return res.status(403).send("Invalid token");
+        return res.status(401).send("Invalid token");
     }
 };
 

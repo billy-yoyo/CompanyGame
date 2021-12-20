@@ -15,8 +15,7 @@ export const TLoginUser = T.Object({
 export type LoginUser = ModelType<typeof TLoginUser>;
 
 export const TLoginResult = T.Object({
-    token: T.Optional(T.String),
-    success: T.Boolean
+    token: T.Optional(T.String)
 });
 export type LoginResult = ModelType<typeof TLoginResult>;
 
@@ -40,6 +39,5 @@ export const TUser = T.Object({
 export type User = ModelType<typeof TUser>;
 
 export interface AuthenticatedUserResult {
-    user?: User;
-    success: boolean;
+    user: User;
 }

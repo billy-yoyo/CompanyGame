@@ -2,7 +2,7 @@ import { readFile } from "fs/promises";
 import * as path from "path";
 
 export const loadConfig = async <T>(...filePath: string[]): Promise<T> => {
-    const file = await readFile(path.join(__dirname, "..", "..", "config", ...filePath));
+    const file = await readFile(path.join("config", ...filePath));
     return JSON.parse(file.toString());
 };
 
